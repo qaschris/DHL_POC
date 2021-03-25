@@ -16,7 +16,7 @@ exports.handler = function ({ event: body, constants, triggers }, context, callb
 
         let testResults = Buffer.from(payload.result, 'base64').toString('ascii');
 
-        //console.log(testResults);
+        //console.log('[DEBUG]: ' + testResults);
 
         var parseString = require('xml2js').parseString;
         var startTime = '';
@@ -30,15 +30,16 @@ exports.handler = function ({ event: body, constants, triggers }, context, callb
             emptyTag: "..."
         }, function (err, result) {
             if (err) {
-                emitEvent('ChatOpsEvent', { message: "Unexpected Error Parsing XML Document: " + err }); 
+                emitEvent('ChatOpsEvent', { Error: "Unexpected Error Parsing XML Document: " + err }); 
                 console.log(err);
-            } else {              
+            } else {
+                console.log('[DEBUG]: ' + JSON.stringify(result));
                 if (result.testsuites) {                    
                     if (result.testsuites.testsuite) {
                         var testsuites = Array.isArray(result.testsuites['testsuite']) ? result.testsuites['testsuite'] : [result.testsuites['testsuite']];
                         testsuites.forEach(function(testsuite) {
                             lastEndTime = 0;
-                            suiteName = testsuite.$.name;
+                            suiteName = result.testsuites.$.name;
                             console.log('Suite Name: ' + suiteName)
                             if (testsuite.testcase) {
                                 var testcases = Array.isArray(testsuite.testcase) ? testsuite.testcase : [testsuite.testcase];
@@ -61,7 +62,7 @@ exports.handler = function ({ event: body, constants, triggers }, context, callb
                                     console.log('Case Name: ' + className)
                                     var classStatus = 'passed';
                                     if (lastEndTime == 0) {
-                                        startTime = new Date(Date.parse(testsuite.$.timestamp)).toISOString();
+                                        startTime = new Date().toISOString();
                                     } else {
                                         startTime = lastEndTime;
                                     }
@@ -113,17 +114,37 @@ exports.handler = function ({ event: body, constants, triggers }, context, callb
 
                                     if (stack !== '') {
                                         testLog.attachments.push({
-                                            name: `${className}.txt`,
+                                            name: `${className}.stacktrace.txt`,
                                             data: Buffer.from(stack).toString("base64"),
                                             content_type: "text/plain"
                                         });
+                                    }
+
+                                    if (testcase['system-err']) {
+                                        if (testcase['system-err'].trim() !== '...') {
+                                            testLog.attachments.push({
+                                                name: `${className}.system-err.txt`,
+                                                data: Buffer.from(testcase['system-err']).toString("base64"),
+                                                content_type: "text/plain"
+                                            });
+                                        }
+                                    }
+
+                                    if (testcase['system-out']) {
+                                        if (testcase['system-out'].trim() !== '...') {
+                                            testLog.attachments.push({
+                                                name: `${className}.system-out.txt`,
+                                                data: Buffer.from(testcase['system-out']).toString("base64"),
+                                                content_type: "text/plain"
+                                            });
+                                        }
                                     }
 
                                     for (var a = 0; a < payload.attachments.length; a++) {
                                         testLog.attachments.push({
                                             name: payload.attachments[a].name,
                                             data: payload.attachments[a].data,
-                                            content_type: 'application/pdf'
+                                            content_type: 'text/csv'
                                         });
                                     }
 
@@ -223,14 +244,6 @@ exports.handler = function ({ event: body, constants, triggers }, context, callb
                                 data: Buffer.from(stack).toString("base64"),
                                 content_type: "text/plain"
                             });
-                            }
-
-                            for (var a = 0; a < payload.attachments.length; a++) {
-                                testLog.attachments.push({
-                                    name: payload.attachments[a].name,
-                                    data: payload.attachments[a].data,
-                                    content_type: 'application/pdf'
-                                });
                             }
                             //testLog.attachments.push(payload.consoleOutput[0]);
                             testLogs.push(testLog);
