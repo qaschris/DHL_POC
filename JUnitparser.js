@@ -30,7 +30,7 @@ exports.handler = function ({ event: body, constants, triggers }, context, callb
             emptyTag: "..."
         }, function (err, result) {
             if (err) {
-                emitEvent('ChatOpsEvent', { Error: "Unexpected Error Parsing XML Document: " + err }); 
+                emitEvent('ChatOpsEvent', { message: "Unexpected Error Parsing XML Document: " + err }); 
                 console.log(err);
             } else {
                 console.log('[DEBUG]: ' + JSON.stringify(result));
@@ -75,10 +75,12 @@ exports.handler = function ({ event: body, constants, triggers }, context, callb
                                     var testFailure = Array.isArray(testcase.failure) ? testcase.failure : [testcase.failure];
                                     testFailure.forEach(function(failure) {
                                         if (failure) {
-                                            console.log(failure.$.type)
+                                            console.log('[INFO]: Failure Type: ' + failure.$.type)
                                             note = failure.$.type + ': ' + failure.$.message;
-                                            console.log(failure._)
-                                            stack = failure._;
+                                            if (failure._) {
+                                                console.log('[INFO]: Stack: ' + failure._)
+                                                stack = failure._;
+                                            }
                                             classStatus = 'failed';
                                         }
                                     });
@@ -86,7 +88,7 @@ exports.handler = function ({ event: body, constants, triggers }, context, callb
                                     var testError = Array.isArray(testcase.error) ? testcase.error : [testcase.error];
                                     testError.forEach(function(error) {
                                         if (error) {
-                                            console.log(error.$.message)
+                                            console.log('[INFO]: Error Message:' + error.$.message)
                                             note = error.$.message;
                                             classStatus = 'failed';
                                         }
@@ -202,10 +204,12 @@ exports.handler = function ({ event: body, constants, triggers }, context, callb
                             var testFailure = Array.isArray(testcase.failure) ? testcase.failure : [testcase.failure];
                             testFailure.forEach(function(failure) {
                                 if (failure) {
-                                    console.log(failure.$.type)
+                                    console.log('[INFO]: Failure Type: ' + failure.$.type)
                                     note = failure.$.type + ': ' + failure.$.message;
-                                    console.log(failure._)
-                                    stack = failure._;
+                                        if (failure._) {
+                                            console.log('[INFO]: Stack: ' + failure._)
+                                            stack = failure._;
+                                        }
                                     classStatus = 'failed';
                                 }
                             });
@@ -213,7 +217,7 @@ exports.handler = function ({ event: body, constants, triggers }, context, callb
                             var testError = Array.isArray(testcase.error) ? testcase.error : [testcase.error];
                             testError.forEach(function(error) {
                                 if (error) {
-                                    console.log(error.$.message)
+                                    console.log('[INFO]: Error Message:' + error.$.message)
                                     note = error.$.message;
                                     classStatus = 'failed';
                                 }
